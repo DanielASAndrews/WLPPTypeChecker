@@ -15,11 +15,21 @@
 #endif
 
 
-    using std::map;
-    using std::pair;
-    using std::make_pair;
-
+using std::map;
+using std::pair;
+using std::make_pair;
 using namespace std;
+
+//Globals
+
+tree *parseTree;
+
+int dclSeen = 0;
+int offset = -4;
+int loopNumber = 0;
+string type = "";
+string strInt = "int";
+string strIntStar = "int*";
 
 const char *terminals[] = {
   "BOF", "BECOMES", "COMMA", "ELSE", "EOF", "EQ", "GE", "GT", "ID",
@@ -63,24 +73,18 @@ tree *readParse(const string &lhs) {
   string line;
   getline(cin, line);
 
-//cout << "getline has succeeded" << endl;
-//cout << line << endl;
-  
-//bool cfail = cin.fail();
-//cout << "cfail " << cfail << endl;
- 
  if(cin.fail())
 {
-  //  cerr << "cin has failed" << endl;
+
     bail("ERROR: Unexpected end of file.");
 }
  tree *ret = new tree();
- //cout << "About to tokenize" << endl;
+
   // Tokenize the line.
   stringstream ss;
   ss << line;
   while(!ss.eof()) {
-  //  cout << "We've reached the while" << endl;
+ 
     string token;
     ss >> token;
     if(token == "") continue;
@@ -100,115 +104,6 @@ tree *readParse(const string &lhs) {
   }
   return ret;
 }
-
-// *********  OLD CODE
-
-// //Globals
-
-// //
-
-// tree *parseTree;
-
-// int dclSeen = 0;
-// int offset = -4;
-// int loopNumber = 0;
-
-// string type = "";
-// string strInt = "int";
-// string strIntStar = "int*";
-
-// //
-
-// // Compute symbols defined in t.
-// void genSymbols(tree *t) {
-
-// //	cout << "tokens[0] " << t->tokens[0] << endl;
-// /*	if (t->tokens.size() > 1)
-// 	{
-// 		cout << "tokens[1] " << t->tokens[1] << endl;
-// 	}
-// */
-
-// 	if (t->tokens[0] == "dcl")
-// 	{
-// 		dclSeen = 1;
-// 	}
-
-// 	if (t->tokens.size() > 1)
-// 	{
-
-// 		if (t->tokens[1] == "int")
-// 		{
-// 			type = "int";
-// 		}
-
-// 		if (t->tokens[1] == "*" && type == "int")
-// 		{
-// 			type = "int*";
-// 		}
-// 	}
-
-// 	if (t->tokens[0] == "ID")
-// 	{
-// 	//	cout << "Found ID, ID is " << t->tokens[1] << endl;
-// 	//	cout << "dclSeen is " << dclSeen << endl;
-// 	//	cout << "type is " << type << endl;
-
-// 		map<const string, hash_pair>::iterator idExists = hashMap.find(t->tokens[1]);
-
-// 		if (idExists == hashMap.end() && dclSeen == 1)
-// 		{
-// 			hashMap.insert( make_pair( t->tokens[1], make_pair(type,dclSeen) ) );
-// 			dclSeen = 0;
-// 			type = "";
-// 		}
-// 		else if (idExists == hashMap.end() && dclSeen == 0)
-// 		{
-// 			string problem = "ERROR: " + t->tokens[1] + " was not declared";
-//                 	bail(problem);
-// 		}
-		
-// 	/*	if (idExists != hashMap.begin() && idExists != hashMap.end())
-// 		{
-// 			string tempkey = idExists->first;
-//                 	cerr << "This is what exists in the hashmap already " << tempkey << " " << hashMap[tempkey].first << '\n';
-// 		}
-// 	*/
-
-// 		if (idExists != hashMap.end() && dclSeen == 1)
-// 		{
-// 			string problem = "ERROR: " + t->tokens[1] + " was already declared";
-//                         bail(problem);
-// 		}
-         
-// 	}
-
-//        // Recurse if children still exist.
-
-// //	cout << "Try to recurse on the children" << endl;
-//   	if(t->children.size() != 0) {
-
-// //	cout << "Recurse on the children, size of children: " << t->children.size() << endl;
-
-// 		for(int idx=0; idx < t->children.size(); ++idx) 
-//                 {
-//                         genSymbols(t->children[idx]);
-//                 }
-//     	}
-//   }
-
-// *********  OLD CODE
-
-//Globals
-
-tree *parseTree;
-
-int dclSeen = 0;
-int offset = -4;
-int loopNumber = 0;
-string type = "";
-string strInt = "int";
-string strIntStar = "int*";
 
 // Compute symbols defined in t.
 void genSymbols(tree *t) {
@@ -310,6 +205,7 @@ string exprType(tree* t)
 
     string type = termType(t->children[0]);
     t->type = type;
+     DEBUG ("So return type: " + type);
     return type;
   }
   else if (t->children.size() == 3)
@@ -424,6 +320,9 @@ string factorType(tree* t)
 
           string type = idType(t->children[0]);
           t->type = type;
+
+          DEBUG ("So return type: " + type);
+
           return type;
         }
         else if (t->tokens[1] == "NUM")
@@ -482,6 +381,7 @@ string factorType(tree* t)
        DEBUG("Calculate the factor type");
           t->type = strInt;
           string type = factorType(t->children[1]);
+           DEBUG ("So return type: " + type);
           if (type == strIntStar)
       {
            DEBUG("factor = INT*");
@@ -542,6 +442,7 @@ string termType(tree* t)
          DEBUG("Calculate the factor type");
         string type = factorType(t->children[0]);
         t->type = type;
+         DEBUG ("So return type: " + type);
         return type;
       }
       else if (t->children.size() == 3)
@@ -691,22 +592,30 @@ for (int i = 0; i < t->tokens.size(); i++) {
 
       result = exprType(t);
 
+      DEBUG("Result of expr is: " + result);
+
    }
    else if(t->tokens[i] == "factor"){
       
       DEBUG("token is factor");
 
       result = factorType(t);
+
+      DEBUG("Result of factor is: " + result);
    }
    else if(t->tokens[i] == "term"){
       DEBUG("token is term");
 
       result = termType(t);
+
+      DEBUG("Result of term is: " + result);
    }
    else if(t->tokens[i] == "lvalue"){
 
       DEBUG("token is lvalue");
       result = lValueType(t);
+
+      DEBUG("Result of lvalue is: " + result);
    }
 } 
 
@@ -755,8 +664,6 @@ int main()
     cout << retu << endl;
 
     checkTypes(parseTree);
-
-
         
     //genCode(parseTree);
   } catch(string msg) {
